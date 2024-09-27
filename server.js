@@ -30,15 +30,15 @@ app.get('/', async (req, res) => {
 
 const httpsServer = createServer( {key, cert}, app);
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 httpsServer.listen(port, () => {
-    console.log('HTTPS server listening on port 3000');
+    console.log('HTTPS server listening on port 8080');
 });
 
 const h3Server = new Http3Server({
     port,
     host: "0.0.0.0",
-    secret: "changeit",
+    secret: "provaprova",
     cert,
     privKey: key,
   });
@@ -70,7 +70,7 @@ const io = new SocketIOServer(httpsServer, {
     // pingTimeout: 5000, // timeout for inactive users
 });
 
-/* ----------------- */
+/* BUSINESS LOGIC */
 
 const serverPlayers = {};
 let numPlayers = 0;
