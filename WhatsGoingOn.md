@@ -184,7 +184,7 @@ const { KubeConfig, CoreV1Api } = require('@kubernetes/client-node');
 const { createGameContainer } = require('./gameSessions');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 
 // Middleware per il parsing del corpo delle richieste
 app.use(bodyParser.json());
@@ -445,6 +445,47 @@ kubectl apply -f game-service.yaml
   
 - **Container di Gioco**: I container di gioco verranno creati dinamicamente dal backend quando un utente inizia una nuova partita. Puoi accedere ai container di gioco utilizzando l'IP del nodo e la porta specificata nel servizio `game-service`.
 
-## To Do
+## Gestione delle connessioni:
 
-Trovare un meccanismo per terminare i container di gioco quando la partita è finita. Questo potrebbe essere fatto utilizzando un sistema di timeout o un'API per terminare i container. Si potrebbero riciclare i container gia' creati per nuove partite.
+Modifica del client javascript per mantenere un heartbeat con il server frontend e gestione del fine partita.
+
+### 1. Heartbeat con il Server Frontend
+
+Endpoint per il heartbeat del server frontend:
+
+```javascript
+app.get('/api/heartbeat', (req, res) => {
+    res.json({ status: 'ok' });
+    // Aggiorna lo stato delle connessioni attive:
+    // Array di oggetti { sessionCode, timestamp }
+});
+```
+Client JavaScript per invio heartbeat:
+
+```javascript
+setInterval(async () => {
+    await fetch('/api/heartbeat', { method: 'GET' });
+}, 5000); // Invia un heartbeat ogni 5 secondi
+```
+
+### 2. Gestione del Fine Partita
+
+A fine partita, quando il giocatore "muore" o scade il tempo, il client invierà una richiesta al server frontend per segnalare la fine della partita all'endpoint preposto.
+
+Endpoint per la fine della partita:
+
+```javascript
+app.post('/api/end-game', (req, res) => {
+    const { sessionCode } = req.body;
+    // Aggiorna lo stato della sessione di gioco come "terminata"
+    res.json({ message: 'Partita terminata' });
+    // Invio al backend per terminare il container di gioco
+    const response = await axios.post(`${backendUrl}/api/destroy-session`, { sessionCode });
+    // Rimuovi la sessione di gioco dalla memoria
+    delete gameSessions[sessionCode];
+});
+```
+
+## To Docker 
+
+Containerizzare il server di gioco e creare configurazioni per cluster kubernetes.
